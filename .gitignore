@@ -1,0 +1,89 @@
+############################
+# Dependencies
+############################
+node_modules/
+.pnp/
+.pnp.js
+
+############################
+# Next.js build output
+############################
+.next/
+out/
+dist/
+build/
+.next/cache/
+
+############################
+# Environment / Secrets
+############################
+.env
+.env.*
+!.env.example
+
+############################
+# Logs
+############################
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+############################
+# OS / Editor
+############################
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+############################
+# TypeScript
+############################
+*.tsbuildinfo
+
+############################
+# Testing / Coverage
+############################
+coverage/
+.playwright/
+test-results/
+
+############################
+# Prisma
+############################
+prisma/dev.db
+prisma/*.db
+prisma/*.db-journal
+
+############################
+# Docker
+############################
+.dockerignore
+docker-compose.override.yml
+
+############################
+# Turborepo
+############################
+.turbo/
+
+############################
+# Cache / Misc
+############################
+.eslintcache
+.cache/
+.tmp/
+temp/
+
+############################
+# Security / Artifacts
+############################
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+*.keystore
+secrets/
