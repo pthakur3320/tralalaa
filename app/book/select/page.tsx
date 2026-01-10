@@ -2,101 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { properties, Property, PricingTier } from "@/data/properties";
+import { properties } from "@/data/properties";
+import { calculatePrice, daysBetween } from "@/lib/pricing";
+import { formatINR } from "@/lib/format";
 
-/* ================= UTILITIES ================= */
-
-function todayISO() {
-  return new Date().toISOString().split("T")[0];
-}
-
-function daysBetween(start?: string, end?: string) {
-  if (!start || !end) return 0;
-
-  const s = new Date(start);
-  const e = new Date(end);
-
-  if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
-
-  return Math.max(
-    0,
-    Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24))
-  );
-}
-
-/**
- * Select pricing tier based on nights
- */
-function selectPricingTier(pricing: PricingTier[], nights: number) {
-  return pricing
-    .slice()
-    .sort((a, b) => b.minNights - a.minNights)
-    .find(t => nights >= t.minNights);
-}
-
-/**
- * Convert tier + nights into USER FRIENDLY LABEL
- */
-function getStayLabel(nights: number) {
-  if (nights >= 30) return "Monthly stay (best value)";
-  if (nights >= 7) return "Weekly long stay";
-  return "Short stay";
-}
-
-/**
- * SAFE pricing calculation
- */
-function calculatePrice(
-  property: Property,
-  nights: number,
-  guests: number
-) {
-  if (nights <= 0) return null;
-
-  const tier = selectPricingTier(property.pricing, nights);
-  if (!tier) return null;
-
-  const roomsRequired = Math.ceil(
-    guests / property.roomCapacity
-  );
-
-  const beds = roomsRequired; // 1 double bed per room
-
-  const basePrice =
-    tier.pricePerDay * nights * roomsRequired;
-
-  const extraGuests = Math.max(
-    0,
-    guests - tier.maxGuests * roomsRequired
-  );
-
-  const extraGuestCost =
-    extraGuests * tier.extraGuestPrice * nights;
-
-  const subtotal = basePrice + extraGuestCost;
-  const gst = Math.round((subtotal * tier.gstPercent) / 100);
-  const total = subtotal + gst;
-
-  return {
-    tier,
-    roomsRequired,
-    beds,
-    stayLabel: getStayLabel(nights),
-    total,
-  };
-}
 
 /* ================= PAGE ================= */
 
-export default function BookingSelect({
-  searchParams,
-}: {
-  searchParams: {
-    location?: string;
-    arrival?: string;
-    departure?: string;
-  };
-}) {
+export default function BookingSelect({ searchParams }: any) {
   const [location, setLocation] = useState(searchParams.location ?? "");
   const [arrival, setArrival] = useState(searchParams.arrival ?? "");
   const [departure, setDeparture] = useState(searchParams.departure ?? "");
@@ -117,167 +30,187 @@ export default function BookingSelect({
   );
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-12">
+    <main className="max-w-5xl mx-auto px-4 py-8">
       {/* HEADER */}
-      <header className="text-center mb-12">
-        <p className="text-xs tracking-[0.3em] text-slate-400 mb-2">
-          BOOK YOUR STAY
+      <header className="mb-6 text-center">
+        <p className="text-xs tracking-[0.25em] text-slate-400 uppercase">
+          Book your stay
         </p>
         <StepIndicator />
-        <h1 className="mt-4 text-2xl font-light">
-          Select Your Room & Rate
+        <h1 className="mt-2 text-xl font-medium">
+          Select your stay
         </h1>
       </header>
 
-      {/* SUMMARY */}
-      <section className="mb-12 rounded-2xl border bg-white p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <SummaryBlock label="Arrival – Departure">
-            <div className="flex gap-2">
-              <input
-                type="date"
-                min={todayISO()}
-                value={arrival}
-                onChange={e => {
-                  setArrival(e.target.value);
-                  if (departure && e.target.value >= departure) {
-                    setDeparture("");
-                  }
-                }}
-                className="summary-input"
-              />
-              <input
-                type="date"
-                min={arrival || todayISO()}
-                value={departure}
-                onChange={e => setDeparture(e.target.value)}
-                className="summary-input"
-              />
-            </div>
-          </SummaryBlock>
+      {/* SEARCH BAR */}
+      {/* SEARCH BAR */}
+<section className="sticky top-0 z-10 bg-white border rounded-full px-4 py-2 mb-6 shadow-sm">
+  <div className="flex flex-wrap items-center gap-4 text-sm">
 
-          <SummaryBlock label="Location">
-            <select
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-              className="summary-input"
-            >
-              <option value="" disabled>Select</option>
-              {locations.map(loc => (
-                <option key={loc} value={loc}>{loc}</option>
-              ))}
-            </select>
-          </SummaryBlock>
+    {/* DATES */}
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-slate-400 uppercase">Dates</span>
+      <input
+        type="date"
+        value={arrival}
+        onChange={e => {
+          setArrival(e.target.value);
+          if (departure && e.target.value >= departure) {
+            setDeparture("");
+          }
+        }}
+        className="border-none p-0 text-sm focus:ring-0"
+      />
+      <span className="text-slate-400">–</span>
+      <input
+        type="date"
+        value={departure}
+        onChange={e => setDeparture(e.target.value)}
+        className="border-none p-0 text-sm focus:ring-0"
+      />
+    </div>
 
-          <SummaryBlock label="Guests">
-            <div className="flex items-center justify-center gap-3">
-              <GuestButton onClick={() => setGuests(Math.max(1, guests - 1))}>−</GuestButton>
-              <span>{guests}</span>
-              <GuestButton onClick={() => setGuests(guests + 1)}>+</GuestButton>
-            </div>
-          </SummaryBlock>
+    <div className="h-5 w-px bg-slate-200" />
 
-          <SummaryBlock label="Nights">
-            <p>{nights > 0 ? nights : "—"}</p>
-          </SummaryBlock>
-        </div>
-      </section>
-
-      {/* PROPERTIES */}
-      <section className="space-y-12">
-        {filteredProperties.map(property => (
-          <OfferCard
-            key={property.slug}
-            property={property}
-            nights={nights}
-            guests={guests}
-          />
+    {/* LOCATION */}
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-slate-400 uppercase">Location</span>
+      <select
+        value={location}
+        onChange={e => setLocation(e.target.value)}
+        className="border-none p-0 text-sm focus:ring-0"
+      >
+        <option value="" disabled>Select</option>
+        {locations.map(loc => (
+          <option key={loc}>{loc}</option>
         ))}
+      </select>
+    </div>
+
+    <div className="h-5 w-px bg-slate-200" />
+
+    {/* GUESTS */}
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-slate-400 uppercase">Guests</span>
+      <GuestButton onClick={() => setGuests(Math.max(1, guests - 1))}>−</GuestButton>
+      <span className="text-sm">{guests}</span>
+      <GuestButton onClick={() => setGuests(guests + 1)}>+</GuestButton>
+    </div>
+
+    {/* NIGHTS (INLINE, NOT A BLOCK) */}
+    {nights > 0 && (
+      <span className="ml-auto text-xs text-slate-500">
+        {nights} nights
+      </span>
+    )}
+  </div>
+</section>
+
+
+      {/* RESULTS */}
+      <section className="space-y-4">
+        {filteredProperties.map(property => {
+          const pricing = calculatePrice(property, nights, guests);
+
+          return (
+            <article
+              key={property.slug}
+              className="border rounded-xl bg-white hover:shadow-sm transition"
+            >
+              <div className="flex gap-4 p-4">
+                {/* IMAGE */}
+                <div className="relative w-36 h-28 rounded-lg overflow-hidden flex-shrink-0">
+                  <Image
+                    src={property.images.cover}
+                    alt={property.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+
+                {/* CONTENT */}
+                <div className="flex-1">
+                  <h2 className="text-sm font-semibold">
+                    <a
+                      href={`/locations/${property.slug}?arrival=${arrival}&departure=${departure}&guests=${guests}`}
+                      className="hover:underline"
+                    >
+                      {property.name}
+                    </a>
+                  </h2>
+
+                  {pricing && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {pricing.roomsRequired} room · {pricing.beds} bed
+                    </p>
+                  )}
+
+                  {/* KEY AMENITIES ONLY */}
+                  <p className="mt-1 text-xs text-slate-600">
+                    ✓ Wi-Fi · ✓ Workspace · ✓ Power backup
+                  </p>
+                </div>
+
+                {/* PRICE + CTA */}
+                <div className="text-right flex flex-col justify-between">
+                  {pricing && (
+                    <>
+                      <div>
+                        {pricing.originalTotal > pricing.discountedTotal && (
+                          <p className="text-xs text-slate-400 line-through">
+                            ₹{pricing.originalTotal.toLocaleString()}
+                          </p>
+                        )}
+
+                        <p className="text-lg font-semibold">
+                          ₹{formatINR(pricing.discountedTotal)}
+
+                        </p>
+
+                        <p className="text-xs text-slate-500">
+                          ₹{pricing.perNight.toLocaleString()} / night
+                        </p>
+
+                        {pricing.savings > 0 && (
+                          <p className="text-xs text-green-600">
+                            Save ₹{pricing.savings.toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mt-2 flex gap-2 justify-end">
+                        <a
+                          href={`/locations/${property.slug}?arrival=${arrival}&departure=${departure}&guests=${guests}`}
+                          className="px-3 py-1.5 text-xs rounded-md border hover:bg-slate-100"
+                        >
+                          View details
+                        </a>
+
+                        <a
+                          href={`/locations/${property.slug}?arrival=${arrival}&departure=${departure}&guests=${guests}`}
+                          className="px-3 py-1.5 text-xs rounded-md bg-red-500 text-white hover:bg-red-600"
+                        >
+                          Book stay
+                        </a>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </section>
     </main>
   );
 }
 
-/* ================= OFFER CARD ================= */
-
-function OfferCard({
-  property,
-  nights,
-  guests,
-}: {
-  property: Property;
-  nights: number;
-  guests: number;
-}) {
-  const pricing = calculatePrice(property, nights, guests);
-
-  return (
-    <article className="grid md:grid-cols-[320px_1fr] gap-6 rounded-2xl border bg-white overflow-hidden">
-      <div className="relative h-64 md:h-full">
-        <Image
-          src={property.image}
-          alt={`${property.name} in ${property.location}`}
-          fill
-          className="object-cover"
-        />
-      </div>
-
-      <div className="p-6 flex flex-col justify-between">
-        <div>
-          <h2 className="text-lg font-semibold mb-2">
-            {property.name}
-          </h2>
-
-          {pricing && (
-            <p className="text-sm text-slate-500 mb-3">
-              {pricing.roomsRequired} room
-              {pricing.roomsRequired > 1 ? "s" : ""} ·
-              {" "}{pricing.beds} double bed
-              {pricing.beds > 1 ? "s" : ""}
-            </p>
-          )}
-
-          <ul className="grid grid-cols-2 gap-y-2 text-sm text-slate-600 mb-4">
-            {property.amenities.map(a => (
-              <li key={a}>✓ {a}</li>
-            ))}
-          </ul>
-        </div>
-
-        {pricing ? (
-          <div className="border-t pt-4 flex justify-between items-center">
-            <div>
-              <p className="text-xs text-slate-500">
-                {pricing.stayLabel}
-              </p>
-              <p className="text-xl font-semibold">
-                ₹{pricing.total.toLocaleString()}
-              </p>
-              <p className="text-xs text-slate-500">
-                Includes taxes · No booking fees
-              </p>
-            </div>
-
-            <button className="bg-red-500 text-white px-6 py-2 rounded-lg">
-              ADD
-            </button>
-          </div>
-        ) : (
-          <p className="text-sm text-slate-400 border-t pt-4">
-            Select valid dates to view price
-          </p>
-        )}
-      </div>
-    </article>
-  );
-}
-
-/* ================= UI ================= */
+/* ================= UI HELPERS ================= */
 
 function SummaryBlock({ label, children }: any) {
   return (
     <div className="text-center">
-      <p className="text-[11px] tracking-widest text-slate-400 uppercase mb-1">
+      <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-1">
         {label}
       </p>
       {children}
@@ -289,7 +222,7 @@ function GuestButton({ children, onClick }: any) {
   return (
     <button
       onClick={onClick}
-      className="h-8 w-8 rounded-full border hover:bg-slate-100"
+      className="h-7 w-7 rounded-full border text-sm hover:bg-slate-100"
     >
       {children}
     </button>
@@ -298,7 +231,7 @@ function GuestButton({ children, onClick }: any) {
 
 function StepIndicator() {
   return (
-    <div className="flex justify-center gap-4">
+    <div className="flex justify-center items-center gap-3 mt-1">
       <Step number={1} />
       <Divider />
       <Step number={2} active />
@@ -308,15 +241,17 @@ function StepIndicator() {
   );
 }
 
-function Step({ number, active }: { number: number; active?: boolean }) {
+function Step({ number, active }: any) {
   return (
-    <div className={`h-8 w-8 flex items-center justify-center rounded-full text-sm
-      ${active ? "bg-slate-900 text-white" : "border text-slate-400"}`}>
+    <div
+      className={`h-7 w-7 rounded-full flex items-center justify-center text-xs
+      ${active ? "bg-slate-900 text-white" : "border text-slate-400"}`}
+    >
       {number}
     </div>
   );
 }
 
 function Divider() {
-  return <div className="w-10 h-px bg-slate-300" />;
+  return <div className="w-6 h-px bg-slate-300" />;
 }
