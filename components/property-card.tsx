@@ -3,38 +3,77 @@
 import Link from "next/link";
 import Image from "next/image";
 
-export default function PropertyCard({ property }: any) {
+/**
+ * PropertyCard
+ * Used on:
+ * - Homepage
+ * - Locations page
+ *
+ * Purpose:
+ * - Quick discovery
+ * - Trust building
+ * - SEO-friendly internal linking
+ */
+export default function PropertyCard({ property }: { property: any }) {
+  /**
+   * PRICE NORMALIZATION
+   * We show ONLY a starting price here.
+   * Detailed pricing stays inside booking flow.
+   *
+   * This avoids:
+   * - Different prices on different pages
+   * - User confusion
+   */
+  const startingPrice =
+    property.pricing?.[0]?.pricePerDay ?? null;
+
   return (
     <Link
       href={`/locations/${property.slug}`}
+      aria-label={`View details for ${property.name} in ${property.location}`}
       className="
-        group block overflow-hidden rounded-xl border bg-white
+        group block overflow-hidden rounded-xl
+        border bg-white
         transition-all duration-300
         hover:-translate-y-1 hover:shadow-xl
+        focus:outline-none focus:ring-2 focus:ring-slate-900
       "
     >
-      <div className="relative h-48 w-full overflow-hidden">
+      {/* IMAGE */}
+      <div className="relative h-52 w-full overflow-hidden">
         <Image
           src={property.image}
-          alt={property.name}
+          alt={`${property.name} in ${property.location}`}
           fill
+          priority={false}
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+
+        {/* IMAGE OVERLAY (SEO safe, UX polish) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
       </div>
 
-      <div className="p-6">
-        <h3 className="text-xl font-semibold">{property.name}</h3>
+      {/* CONTENT */}
+      <div className="p-5">
+        {/* TITLE */}
+        <h3 className="text-lg font-semibold text-slate-900 leading-snug">
+          {property.name}
+        </h3>
 
-        <p className="mt-2 text-slate-600 flex items-center gap-1">
+        {/* LOCATION */}
+        <p className="mt-1 text-sm text-slate-600 flex items-center gap-1">
           📍 {property.location}
         </p>
 
-        <div className="mt-4 flex gap-2 text-xs">
-          <span className="rounded-full bg-slate-100 px-3 py-1">
-            ⚡ {property.wifi}
-          </span>
+        {/* AMENITIES */}
+        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+          {property.wifi && (
+            <span className="rounded-full bg-slate-100 px-3 py-1">
+              ⚡ High-speed WiFi
+            </span>
+          )}
+
           {property.power && (
             <span className="rounded-full bg-slate-100 px-3 py-1">
               🔌 Power Backup
@@ -42,8 +81,26 @@ export default function PropertyCard({ property }: any) {
           )}
         </div>
 
-        <div className="mt-6 text-sm font-medium text-slate-900">
-          View details →
+        {/* PRICE */}
+        {startingPrice && (
+          <div className="mt-4 flex items-baseline gap-1">
+            <span className="text-sm text-slate-500">From</span>
+            <span className="text-base font-semibold text-slate-900">
+              ₹{startingPrice.toLocaleString()}
+            </span>
+            <span className="text-sm text-slate-500">/ night</span>
+          </div>
+        )}
+
+        {/* TRUST + CTA */}
+        <div className="mt-5 flex items-center justify-between">
+          <p className="text-xs text-slate-500">
+            ✓ No booking fees
+          </p>
+
+          <span className="text-sm font-medium text-slate-900 group-hover:underline">
+            View details →
+          </span>
         </div>
       </div>
     </Link>

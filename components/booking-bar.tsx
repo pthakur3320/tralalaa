@@ -2,14 +2,34 @@
 
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { properties } from "@/data/properties";
 
+/**
+ * Returns today's date in YYYY-MM-DD format
+ * Used to prevent past date selection
+ */
 function todayISO() {
   return new Date().toISOString().split("T")[0];
 }
 
+/**
+ * BookingBar
+ *
+ * Purpose:
+ * - Primary conversion component on homepage
+ * - Collects minimal intent (location + dates)
+ * - Redirects user into booking flow
+ */
 export default function BookingBar() {
-  const { register, handleSubmit, watch, setValue } = useForm({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState,
+  } = useForm({
+    mode: "onChange",
     defaultValues: {
       location: "",
       arrival: "",
@@ -18,18 +38,37 @@ export default function BookingBar() {
   });
 
   const router = useRouter();
-  const arrival = watch("arrival");
 
-  /* 🔒 DATE SAFETY LOGIC */
+  const arrival = watch("arrival");
+  const location = watch("location");
+
+  /**
+   * LOCATION LIST (single source of truth)
+   * Prevents hardcoded values and mismatch
+   */
+  const locations = useMemo(() => {
+    return Array.from(
+      new Set(properties.map((p) => p.location))
+    );
+  }, []);
+
+  /**
+   * DATE SAFETY LOGIC
+   * - Departure must always be AFTER arrival
+   */
   useEffect(() => {
     if (!arrival) return;
 
-    const dep = watch("departure");
-    if (dep && dep <= arrival) {
+    const departure = watch("departure");
+    if (departure && departure <= arrival) {
       setValue("departure", "");
     }
   }, [arrival, setValue, watch]);
 
+  /**
+   * FORM SUBMIT
+   * Redirects user into booking flow
+   */
   function onSubmit(data: any) {
     const params = new URLSearchParams({
       location: data.location,
@@ -40,9 +79,13 @@ export default function BookingBar() {
     router.push(`/book/select?${params.toString()}`);
   }
 
+  const isDisabled = !formState.isValid;
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
+      role="search"
+      aria-label="Search available stays"
       className="
         mx-auto
         flex w-full max-w-5xl
@@ -57,38 +100,42 @@ export default function BookingBar() {
     >
       {/* LOCATION */}
       <div className="flex-1">
+        <label className="sr-only">Location</label>
         <select
-          {...register("location")}
+          {...register("location", { required: true })}
           className="booking-input"
-          required
         >
           <option value="" disabled>
             Select location
           </option>
-          <option value="Jibhi">Jibhi</option>
-          <option value="Tirthan">Tirthan</option>
+
+          {locations.map((loc) => (
+            <option key={loc} value={loc}>
+              {loc}
+            </option>
+          ))}
         </select>
       </div>
 
       {/* ARRIVAL */}
       <div className="flex-1">
+        <label className="sr-only">Arrival date</label>
         <input
-          {...register("arrival")}
+          {...register("arrival", { required: true })}
           type="date"
           min={todayISO()}
           className="booking-input"
-          required
         />
       </div>
 
       {/* DEPARTURE */}
       <div className="flex-1">
+        <label className="sr-only">Departure date</label>
         <input
-          {...register("departure")}
+          {...register("departure", { required: true })}
           type="date"
           min={arrival || todayISO()}
           className="booking-input"
-          required
         />
       </div>
 
@@ -96,19 +143,22 @@ export default function BookingBar() {
       <div className="flex">
         <button
           type="submit"
+          disabled={isDisabled}
           className="
             h-12
             whitespace-nowrap
             rounded-xl
-            bg-slate-900
             px-8
             text-sm font-medium
             text-white
-            hover:bg-slate-800
             transition
+            bg-slate-900
+            hover:bg-slate-800
+            disabled:bg-slate-400
+            disabled:cursor-not-allowed
           "
         >
-          Book Stay
+          Check availability
         </button>
       </div>
     </form>
