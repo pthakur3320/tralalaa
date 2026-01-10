@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { properties } from "@/data/properties";
+import { properties, Property, PricingTier } from "@/data/properties";
 
 /* ================= UTILITIES ================= */
 
@@ -10,9 +10,14 @@ function todayISO() {
   return new Date().toISOString().split("T")[0];
 }
 
-function daysBetween(start: string, end: string) {
+function daysBetween(start?: string, end?: string) {
+  if (!start || !end) return 0;
+
   const s = new Date(start);
   const e = new Date(end);
+
+  if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
+
   return Math.max(
     0,
     Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24))
@@ -20,13 +25,65 @@ function daysBetween(start: string, end: string) {
 }
 
 /**
- * SINGLE SOURCE OF TRUTH FOR DISCOUNTS
- * Used everywhere (cards, totals, future checkout)
+ * Select pricing tier based on nights
  */
-function calculateDiscount(nights: number) {
-  if (nights >= 28) return 0.15; // 15% monthly
-  if (nights >= 7) return 0.08;  // 8% weekly
-  return 0;
+function selectPricingTier(pricing: PricingTier[], nights: number) {
+  return pricing
+    .slice()
+    .sort((a, b) => b.minNights - a.minNights)
+    .find(t => nights >= t.minNights);
+}
+
+/**
+ * Convert tier + nights into USER FRIENDLY LABEL
+ */
+function getStayLabel(nights: number) {
+  if (nights >= 30) return "Monthly stay (best value)";
+  if (nights >= 7) return "Weekly long stay";
+  return "Short stay";
+}
+
+/**
+ * SAFE pricing calculation
+ */
+function calculatePrice(
+  property: Property,
+  nights: number,
+  guests: number
+) {
+  if (nights <= 0) return null;
+
+  const tier = selectPricingTier(property.pricing, nights);
+  if (!tier) return null;
+
+  const roomsRequired = Math.ceil(
+    guests / property.roomCapacity
+  );
+
+  const beds = roomsRequired; // 1 double bed per room
+
+  const basePrice =
+    tier.pricePerDay * nights * roomsRequired;
+
+  const extraGuests = Math.max(
+    0,
+    guests - tier.maxGuests * roomsRequired
+  );
+
+  const extraGuestCost =
+    extraGuests * tier.extraGuestPrice * nights;
+
+  const subtotal = basePrice + extraGuestCost;
+  const gst = Math.round((subtotal * tier.gstPercent) / 100);
+  const total = subtotal + gst;
+
+  return {
+    tier,
+    roomsRequired,
+    beds,
+    stayLabel: getStayLabel(nights),
+    total,
+  };
 }
 
 /* ================= PAGE ================= */
@@ -41,7 +98,7 @@ export default function BookingSelect({
   };
 }) {
   const [location, setLocation] = useState(searchParams.location ?? "");
-  const [arrival, setArrival] = useState(searchParams.arrival ?? todayISO());
+  const [arrival, setArrival] = useState(searchParams.arrival ?? "");
   const [departure, setDeparture] = useState(searchParams.departure ?? "");
   const [guests, setGuests] = useState(1);
 
@@ -62,21 +119,19 @@ export default function BookingSelect({
   return (
     <main className="max-w-6xl mx-auto px-6 py-12">
       {/* HEADER */}
-      <header className="text-center mb-10">
-        <p className="text-xs tracking-[0.25em] text-slate-400 mb-2">
+      <header className="text-center mb-12">
+        <p className="text-xs tracking-[0.3em] text-slate-400 mb-2">
           BOOK YOUR STAY
         </p>
-
         <StepIndicator />
-
         <h1 className="mt-4 text-2xl font-light">
           Select Your Room & Rate
         </h1>
       </header>
 
       {/* SUMMARY */}
-      <section className="mb-10 rounded-xl border bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
+      <section className="mb-12 rounded-2xl border bg-white p-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <SummaryBlock label="Arrival – Departure">
             <div className="flex gap-2">
               <input
@@ -93,7 +148,7 @@ export default function BookingSelect({
               />
               <input
                 type="date"
-                min={arrival}
+                min={arrival || todayISO()}
                 value={departure}
                 onChange={e => setDeparture(e.target.value)}
                 className="summary-input"
@@ -117,67 +172,51 @@ export default function BookingSelect({
           <SummaryBlock label="Guests">
             <div className="flex items-center justify-center gap-3">
               <GuestButton onClick={() => setGuests(Math.max(1, guests - 1))}>−</GuestButton>
-              <span className="text-sm font-medium">{guests}</span>
+              <span>{guests}</span>
               <GuestButton onClick={() => setGuests(guests + 1)}>+</GuestButton>
             </div>
           </SummaryBlock>
 
           <SummaryBlock label="Nights">
-            <p className="text-sm font-medium">{nights || "-"}</p>
+            <p>{nights > 0 ? nights : "—"}</p>
           </SummaryBlock>
         </div>
       </section>
 
       {/* PROPERTIES */}
-      <section className="space-y-10">
+      <section className="space-y-12">
         {filteredProperties.map(property => (
-          <PropertyCard
+          <OfferCard
             key={property.slug}
             property={property}
-            guests={guests}
             nights={nights}
+            guests={guests}
           />
         ))}
-
-        {!filteredProperties.length && (
-          <p className="text-center text-slate-500 py-8">
-            No properties available for this location.
-          </p>
-        )}
       </section>
     </main>
   );
 }
 
-/* ================= PROPERTY CARD ================= */
+/* ================= OFFER CARD ================= */
 
-function PropertyCard({ property, guests, nights }: any) {
-  if (!nights) return null;
-
-  const roomCapacity = 2;
-  const roomsRequired = Math.ceil(guests / roomCapacity);
-
-  const plan =
-    nights < 7
-      ? property.pricing[0]
-      : nights < 31
-      ? property.pricing[1]
-      : property.pricing[2];
-
-  const baseTotal = plan.pricePerDay * roomsRequired * nights;
-
-  const discountRate = calculateDiscount(nights);
-  const discountAmount = Math.round(baseTotal * discountRate);
-  const discountedSubtotal = baseTotal - discountAmount;
-  const gstAmount = Math.round((discountedSubtotal * plan.gst) / 100);
-  const finalTotal = discountedSubtotal + gstAmount;
+function OfferCard({
+  property,
+  nights,
+  guests,
+}: {
+  property: Property;
+  nights: number;
+  guests: number;
+}) {
+  const pricing = calculatePrice(property, nights, guests);
 
   return (
-    <article className="grid md:grid-cols-[260px_1fr] gap-5 rounded-xl border bg-white overflow-hidden">
-      <div className="relative h-52 md:h-full">
+    <article className="grid md:grid-cols-[320px_1fr] gap-6 rounded-2xl border bg-white overflow-hidden">
+      <div className="relative h-64 md:h-full">
         <Image
           src={property.image}
-          alt={property.name}
+          alt={`${property.name} in ${property.location}`}
           fill
           className="object-cover"
         />
@@ -185,58 +224,49 @@ function PropertyCard({ property, guests, nights }: any) {
 
       <div className="p-6 flex flex-col justify-between">
         <div>
-          <h3 className="text-lg font-semibold mb-1">
+          <h2 className="text-lg font-semibold mb-2">
             {property.name}
-          </h3>
+          </h2>
 
-          <p className="text-sm text-slate-500 mb-3">
-            {roomsRequired} Room{roomsRequired > 1 ? "s" : ""} · {roomCapacity} Guests / room
-          </p>
+          {pricing && (
+            <p className="text-sm text-slate-500 mb-3">
+              {pricing.roomsRequired} room
+              {pricing.roomsRequired > 1 ? "s" : ""} ·
+              {" "}{pricing.beds} double bed
+              {pricing.beds > 1 ? "s" : ""}
+            </p>
+          )}
 
-          <ul className="grid grid-cols-2 gap-y-1 text-sm text-slate-600 mb-4">
-            {property.amenities.map((a: string) => (
+          <ul className="grid grid-cols-2 gap-y-2 text-sm text-slate-600 mb-4">
+            {property.amenities.map(a => (
               <li key={a}>✓ {a}</li>
             ))}
           </ul>
-
-          <div className="flex flex-wrap gap-2 mb-4">
-            {property.benefits.map((b: string) => (
-              <span
-                key={b}
-                className="bg-slate-100 px-3 py-1 text-xs rounded-full"
-              >
-                {b}
-              </span>
-            ))}
-          </div>
         </div>
 
-        {/* PRICE */}
-        <div className="flex items-center justify-between border-t pt-4">
-          <div>
-            <div className="flex items-baseline gap-3">
-              {discountRate > 0 && (
-                <span className="text-sm text-slate-400 line-through">
-                  ₹{baseTotal.toLocaleString()}
-                </span>
-              )}
-
-              <span className="text-xl font-semibold text-slate-900">
-                ₹{finalTotal.toLocaleString()}
-              </span>
+        {pricing ? (
+          <div className="border-t pt-4 flex justify-between items-center">
+            <div>
+              <p className="text-xs text-slate-500">
+                {pricing.stayLabel}
+              </p>
+              <p className="text-xl font-semibold">
+                ₹{pricing.total.toLocaleString()}
+              </p>
+              <p className="text-xs text-slate-500">
+                Includes taxes · No booking fees
+              </p>
             </div>
 
-            {discountRate > 0 && (
-              <p className="text-xs text-green-600 mt-1">
-                You saved ₹{discountAmount.toLocaleString()}
-              </p>
-            )}
+            <button className="bg-red-500 text-white px-6 py-2 rounded-lg">
+              ADD
+            </button>
           </div>
-
-          <button className="px-5 py-2 rounded-md bg-red-500 text-white text-sm hover:bg-red-600">
-            ADD
-          </button>
-        </div>
+        ) : (
+          <p className="text-sm text-slate-400 border-t pt-4">
+            Select valid dates to view price
+          </p>
+        )}
       </div>
     </article>
   );
@@ -247,7 +277,7 @@ function PropertyCard({ property, guests, nights }: any) {
 function SummaryBlock({ label, children }: any) {
   return (
     <div className="text-center">
-      <p className="mb-1 text-[11px] tracking-widest text-slate-400 uppercase">
+      <p className="text-[11px] tracking-widest text-slate-400 uppercase mb-1">
         {label}
       </p>
       {children}
@@ -259,7 +289,7 @@ function GuestButton({ children, onClick }: any) {
   return (
     <button
       onClick={onClick}
-      className="h-8 w-8 rounded-full border text-sm hover:bg-slate-100"
+      className="h-8 w-8 rounded-full border hover:bg-slate-100"
     >
       {children}
     </button>
@@ -268,7 +298,7 @@ function GuestButton({ children, onClick }: any) {
 
 function StepIndicator() {
   return (
-    <div className="flex justify-center items-center gap-4">
+    <div className="flex justify-center gap-4">
       <Step number={1} />
       <Divider />
       <Step number={2} active />
@@ -280,7 +310,7 @@ function StepIndicator() {
 
 function Step({ number, active }: { number: number; active?: boolean }) {
   return (
-    <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm
+    <div className={`h-8 w-8 flex items-center justify-center rounded-full text-sm
       ${active ? "bg-slate-900 text-white" : "border text-slate-400"}`}>
       {number}
     </div>

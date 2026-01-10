@@ -1,11 +1,55 @@
-export const properties = [
+/**
+ * SINGLE SOURCE OF TRUTH FOR ALL PROPERTIES
+ *
+ * Rules:
+ * - NO pricing logic outside this file
+ * - Cards show only "starting price"
+ * - Booking flow calculates totals
+ * - SEO, UI, and logic read from same data
+ */
+
+export type PricingTier = {
+  id: "short" | "weekly" | "monthly";
+  label: string;
+  minNights: number;
+  pricePerDay: number;
+  gstPercent: number;
+  maxGuests: number;
+  extraGuestPrice: number;
+};
+
+export type Property = {
+  slug: string;
+  name: string;
+  location: string;
+  roomCapacity: number;
+  image: string;
+
+  seo: {
+    title: string;
+    description: string;
+  };
+
+  amenities: string[];
+  benefits: string[];
+
+  pricing: PricingTier[];
+};
+
+export const properties: Property[] = [
   {
     slug: "jibhi-sunshine-cafe",
-    name: "Jibhi Sunshine cafe",
+    name: "Jibhi Sunshine Cafe",
     location: "Jibhi",
     roomCapacity: 2,
 
     image: "/images/properties/jibhi.webp",
+
+    seo: {
+      title: "Jibhi Sunshine Cafe | Remote Work Stay in Jibhi",
+      description:
+        "Work remotely from Jibhi with high-speed WiFi, power backup, mountain views, and long-term stay discounts.",
+    },
 
     amenities: [
       "High-speed WiFi",
@@ -23,23 +67,29 @@ export const properties = [
 
     pricing: [
       {
-        label: "Stay < 7 days",
+        id: "short",
+        label: "Short stay",
+        minNights: 1,
         pricePerDay: 1500,
-        gst: 5,
+        gstPercent: 5,
         maxGuests: 2,
-        extraGuestPrice: 400, // per guest per day
+        extraGuestPrice: 400,
       },
       {
-        label: "7 days ≤ Stay < 31 days",
+        id: "weekly",
+        label: "Weekly stay",
+        minNights: 7,
         pricePerDay: 1100,
-        gst: 5,
+        gstPercent: 5,
         maxGuests: 2,
         extraGuestPrice: 300,
       },
       {
-        label: "Stay ≥ 31 days",
+        id: "monthly",
+        label: "Monthly stay",
+        minNights: 31,
         pricePerDay: 800,
-        gst: 5,
+        gstPercent: 5,
         maxGuests: 2,
         extraGuestPrice: 200,
       },
@@ -49,10 +99,16 @@ export const properties = [
   {
     slug: "nagar-mountain-loft-xl",
     name: "Nagar Mountain Loft XL",
-    location: "Tirthan",
+    location: "Nagar",
     roomCapacity: 2,
 
     image: "/images/properties/nagar.avif",
+
+    seo: {
+      title: "Nagar Mountain Loft XL | Long Stay in Tirthan Valley",
+      description:
+        "Spacious mountain loft in Tirthan with WiFi, power backup, balcony, and discounted long-term stays.",
+    },
 
     amenities: [
       "High-speed WiFi",
@@ -65,30 +121,94 @@ export const properties = [
     benefits: [
       "More space",
       "Best for extended stays",
-      "Great for couples / teams",
+      "Great for couples or small teams",
     ],
 
     pricing: [
       {
-        label: "Stay < 7 days",
-        pricePerDay: 1800,
-        gst: 5,
+        id: "short",
+        label: "Short stay",
+        minNights: 1,
+        pricePerDay: 1900,
+        gstPercent: 5,
         maxGuests: 2,
         extraGuestPrice: 500,
       },
       {
-        label: "7 days ≤ Stay < 31 days",
+        id: "weekly",
+        label: "Weekly stay",
+        minNights: 7,
         pricePerDay: 1300,
-        gst: 5,
+        gstPercent: 5,
         maxGuests: 2,
         extraGuestPrice: 400,
       },
       {
-        label: "Stay ≥ 31 days",
+        id: "monthly",
+        label: "Monthly stay",
+        minNights: 31,
         pricePerDay: 950,
-        gst: 5,
+        gstPercent: 5,
         maxGuests: 2,
         extraGuestPrice: 300,
+      },
+    ],
+  },
+  {
+    slug: "Tree Remote Stay",
+    name: "Tree Mountain Stay",
+    location: "Jibhi",
+    roomCapacity: 2,
+
+    image: "/images/properties/nagar.avif",
+
+    seo: {
+      title: "Jibhi Mountain Stay | Long Stay in Jibhi",
+      description:
+        "Spacious mountain loft in Jibhi tree house with WiFi, power backup, balcony, and discounted long-term stays.",
+    },
+
+    amenities: [
+      "High-speed WiFi",
+      "Power Backup",
+      "Extra Workspace",
+      "Balcony",
+      "Mountain View",
+    ],
+
+    benefits: [
+      "More space",
+      "Best for extended stays",
+      "Great for couples or small teams",
+    ],
+
+    pricing: [
+      {
+        id: "short",
+        label: "Short stay",
+        minNights: 1,
+        pricePerDay: 3000,
+        gstPercent: 5,
+        maxGuests: 2,
+        extraGuestPrice: 2000,
+      },
+      {
+        id: "weekly",
+        label: "Weekly stay",
+        minNights: 7,
+        pricePerDay: 2500,
+        gstPercent: 5,
+        maxGuests: 2,
+        extraGuestPrice: 1500,
+      },
+      {
+        id: "monthly",
+        label: "Monthly stay",
+        minNights: 31,
+        pricePerDay: 2000,
+        gstPercent: 5,
+        maxGuests: 2,
+        extraGuestPrice: 1000,
       },
     ],
   },
