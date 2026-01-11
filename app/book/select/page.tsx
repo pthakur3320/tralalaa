@@ -156,8 +156,12 @@ export default function BookingSelect({ searchParams }: any) {
                   {pricing && (
                     <>
                       <div>
-                        {pricing.originalTotal > pricing.discountedTotal && (
+                        <p className="text-xs text-slate-500">
+  Starting from
+</p>
+                        {pricing.originalTotal > pricing.discountedTotal && ( 
                           <p className="text-xs text-slate-400 line-through">
+                        
                             ₹{pricing.originalTotal.toLocaleString()}
                           </p>
                         )}
@@ -187,10 +191,10 @@ export default function BookingSelect({ searchParams }: any) {
                         </a>
 
                         <a
-                          href={`/locations/${property.slug}?arrival=${arrival}&departure=${departure}&guests=${guests}`}
+                          href={`/book/confirm?property=${property.slug}&arrival=${arrival}&departure=${departure}&guests=${guests}`}
                           className="px-3 py-1.5 text-xs rounded-md bg-red-500 text-white hover:bg-red-600"
                         >
-                          Book stay
+                          Enquire Availability
                         </a>
                       </div>
                     </>
