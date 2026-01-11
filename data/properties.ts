@@ -25,7 +25,7 @@ export type Property = {
 
   images: {
     cover: string;
-    gallery?: string[];
+    gallery: string[]; // ALWAYS present
   };
 
   seo: {
@@ -59,10 +59,14 @@ export const properties: Property[] = [
     roomCapacity: 2,
 
     images: {
-      cover: "/images/properties/jibhi.webp",
+      cover: "/images/properties/jibhi/cover.avif",
       gallery: [
-        "/images/properties/jibhi_2.webp",
-        "/images/properties/jibhi_3.webp",
+        "/images/properties/jibhi/1.avif",
+        "/images/properties/jibhi/2.avif",
+        "/images/properties/jibhi/3.webp",
+        "/images/properties/jibhi/4.webp",
+        "/images/properties/jibhi/6.webp",
+        "/images/properties/jibhi/5.webp",
       ],
     },
 
@@ -74,7 +78,7 @@ export const properties: Property[] = [
 
     content: {
       about:
-        "Jibhi Sunshine Cafe is not a peaceful mountain stay designed for remote professionals. It offers reliable Wi-Fi, a calm environment, and long-stay friendly pricing — ideal for focused work and slow living.",
+        "Jibhi Sunshine Cafe is a peaceful mountain stay designed for remote professionals. With reliable high-speed Wi-Fi, power backup, and serene surroundings, it’s ideal for focused work, long stays, and slow living in nature.",
       idealFor: [
         "Remote professionals",
         "Long stays",
@@ -93,8 +97,8 @@ export const properties: Property[] = [
 
     highlights: [
       "Quiet & nature-focused",
-      "Long-stay discounts",
-      "Work-friendly setup",
+      "Long-stay discounts available",
+      "Designed for remote work",
     ],
 
     policies: {
@@ -144,7 +148,8 @@ export const properties: Property[] = [
     roomCapacity: 2,
 
     images: {
-      cover: "/images/properties/nagar.avif",
+      cover: "/images/properties/nagar/cover.avif",
+      gallery: [], // ✅ FIXED
     },
 
     seo: {
@@ -218,7 +223,8 @@ export const properties: Property[] = [
     roomCapacity: 2,
 
     images: {
-      cover: "/images/properties/nagar.avif",
+      cover: "/images/properties/nagar/cover.avif",
+      gallery: [], // ✅ FIXED
     },
 
     seo: {
@@ -284,33 +290,32 @@ export const properties: Property[] = [
   },
 
   {
-    slug: "jibhi-Tree-House",
+    slug: "jibhi-tree-house",
     name: "Jibhi Tree House",
     location: "Jibhi",
     roomCapacity: 2,
 
     images: {
-      cover: "/images/properties/jibhi_2.webp",
+      cover: "/images/properties/jibhi/cover.avif",
       gallery: [
-        "/images/properties/jibhi.webp",
-        "/images/properties/jibhi_3.webp",
+        "/images/properties/jibhi/1.avif",
+        "/images/properties/jibhi/2.avif",
       ],
     },
 
     seo: {
       title: "Jibhi Tree House | Remote Work Stay in Jibhi",
       description:
-        "Remote-work friendly stay in Jibhi with high-speed WiFi, power backup, mountain views, and long-stay discounts.",
+        "Remote-work friendly tree house stay in Jibhi with WiFi, power backup, and mountain views.",
     },
 
     content: {
       about:
-        "Jibhi Tree House is a peaceful mountain stay designed for remote professionals. It offers reliable Wi-Fi, a calm environment, and long-stay friendly pricing — ideal for focused work and slow living.",
+        "A unique tree house experience in Jibhi, blending nature, comfort, and productivity for remote professionals.",
       idealFor: [
         "Remote professionals",
-        "Long stays",
-        "Solo travelers",
         "Couples",
+        "Nature lovers",
       ],
     },
 
@@ -319,17 +324,16 @@ export const properties: Property[] = [
       "Power Backup",
       "Dedicated Workspace",
       "Mountain View",
-      "Fully Equipped Kitchen",
     ],
 
     highlights: [
-      "Quiet & nature-focused",
-      "Long-stay discounts",
+      "Tree house experience",
+      "Nature immersion",
       "Work-friendly setup",
     ],
 
     policies: {
-      cancellation: "Free cancellation up to 1 days before check-in",
+      cancellation: "Free cancellation up to 1 day before check-in",
       houseRules: [
         "No smoking inside rooms",
         "Quiet hours after 10 PM",
