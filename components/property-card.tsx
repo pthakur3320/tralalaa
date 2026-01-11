@@ -126,11 +126,12 @@ export default function PropertyCard({ property }: { property: any }) {
         {/* PRICE */}
         {startingPrice && (
           <div className="mt-4 flex items-baseline gap-1">
-            <span className="text-sm text-slate-500">From</span>
+          <p className="text-sm text-slate-600 mt-3">
+            Starting from{" "}
             <span className="text-base font-semibold text-slate-900">
               ₹{startingPrice.toLocaleString()}
             </span>
-            <span className="text-sm text-slate-500">/ night</span>
+            <span className="text-sm text-slate-500">/ night</span></p>
           </div>
         )}
 
