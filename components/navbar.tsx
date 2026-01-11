@@ -26,6 +26,7 @@ export default function Navbar() {
           <Link href="/locations">Locations</Link>
           <Link href="/partner">Partner</Link>
           <Link href="/contact">Contact</Link>
+          <Link href="/blog">Blogs</Link>
         </nav>
       </div>
 
